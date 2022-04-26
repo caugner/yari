@@ -488,6 +488,7 @@ module.exports = {
   remove,
   resolve,
   load,
+  loadLocaleAndAdd,
   validateLocale,
 
   testing: {
