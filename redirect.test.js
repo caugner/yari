@@ -39,13 +39,18 @@ function relativePathOf(sourcePath, targetPath) {
   return [...sourcePathRest.map(() => ".."), ...targetPathRest];
 }
 
-function optimizeTree(map, { parentPath = [] } = {}) {
+function optimizeTree(
+  map,
+  { parentSourcePath = [], parentTargetPath = [] } = {}
+) {
   // en-US, docs, ARIA
-  const sourcePath = parentPath;
+  const sourcePath = parentSourcePath;
 
   // en-US, docs, Web, Accessibility, ARIA
   const targetPath =
-    typeof map["_"] === "string" ? map["_"].split("/").slice(1) : sourcePath;
+    typeof map["_"] === "string"
+      ? map["_"].split("/").slice(1)
+      : parentTargetPath;
 
   const path = relativePathOf(sourcePath, targetPath);
 
@@ -57,8 +62,10 @@ function optimizeTree(map, { parentPath = [] } = {}) {
       if (key === "_") {
         value = path.join("/");
       } else {
-        const parentPath = [...targetPath, key];
-        value = optimizeTree(value, { parentPath });
+        value = optimizeTree(value, {
+          parentSourcePath: [...sourcePath, key],
+          parentTargetPath: [...targetPath, key],
+        });
       }
 
       return {
