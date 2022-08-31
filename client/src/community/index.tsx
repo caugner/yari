@@ -13,7 +13,7 @@ export function Contribute() {
     <main className="contribute">
       <div className="stats-container dark">
         <section className="stats-header">
-          <h1>Community for a better Web</h1>
+          <h1>Community for a better web</h1>
           <ul className="stats">
             {STATS.map((s) => (
               <li key={s.id}>
@@ -50,7 +50,7 @@ export function Contribute() {
             Product Advisory Board
           </a>{" "}
           (PAB). MDN is an influential resource and the PAB helps ensure that
-          MDN’s influence puts the Web first, not any one vendor or
+          MDN’s influence puts the web first, not any one vendor or
           organization, and respects the needs of web developers across the
           industry. Each quarter, the PAB meets to discuss problems, prioritize
           content creation, and make connections for future collaborations.
@@ -132,11 +132,10 @@ export function Contribute() {
         <h2>How to contribute</h2>
         <p>
           We are an open community of developers building resources for a better
-          Web, regardless of brand, browser, or platform. Anyone can contribute
+          web, regardless of brand, browser, or platform. Anyone can contribute
           and each person who does makes us stronger. Together we can continue
-          to drive innovation on the Web to serve the greater good. It starts
-          here, with you. Please,{" "}
-          <a href="/en-US/docs/MDN/Contribute">join us</a>!
+          to drive innovation on the web to serve the greater good. It starts
+          here, with you. <a href="/en-US/docs/MDN/Contribute">Join us</a>!
         </p>
         <p>
           No matter your specific level of expertise, individual strengths and
