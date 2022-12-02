@@ -15,7 +15,12 @@ import log from "loglevel";
 
 const dirname = __dirname;
 
-import { DEFAULT_LOCALE, VALID_LOCALES } from "../libs/constants";
+import {
+  DEFAULT_LOCALE,
+  HTML_FILENAME,
+  MARKDOWN_FILENAME,
+  VALID_LOCALES,
+} from "../libs/constants";
 import { CONTENT_ROOT, CONTENT_TRANSLATED_ROOT } from "../libs/env";
 import { Redirect, Document, buildURL, getRoot } from "../content";
 import { buildDocument, gatherGitHistory, buildSPAs } from "../build";
@@ -37,6 +42,7 @@ import {
   MacroInvocationError,
   MacroRedirectedLinkError,
 } from "../kumascript/src/errors";
+import { findAll } from "../content/document";
 
 const PORT = parseInt(process.env.SERVER_PORT || "5042");
 
@@ -1157,6 +1163,127 @@ if (Mozilla && !Mozilla.dntEnabled()) {
         }
       }
     )
-  );
+  )
+
+  .command(
+    "replace-mozillademos",
+    "Replaces occurrences of mdn.mozillademos.org"
+  )
+  .action(() => {
+    const REGEXP =
+      /(?:['"(])(<?\s*https:\/\/mdn.mozillademos.org\/files\/.+?\.(?:gif|jpe?g|png|svg)\s*>?)(?:["')])/gi;
+
+    const filesByFilename = new Map<string, Set<string>>();
+
+    const normalizeFilename = (filename: string) =>
+      filename.toLowerCase().replace(/\s/g, "_").replace(/:/g, "-");
+
+    const index = (root: string) => {
+      console.log(`Indexing ${root}...`);
+      const files = new fdir()
+        .withFullPaths()
+        .withErrors()
+        .crawl(root)
+        .sync() as string[];
+      for (const file of files) {
+        const filename = normalizeFilename(path.basename(file));
+
+        if (!filesByFilename.has(filename)) {
+          filesByFilename.set(filename, new Set<string>());
+        }
+        filesByFilename.get(filename).add(file);
+      }
+    };
+
+    index(CONTENT_ROOT);
+    index("/Users/claas/aws/s3/mdn-media-prod/attachments");
+
+    for (const locale of VALID_LOCALES.keys()) {
+      const root = path.join(CONTENT_TRANSLATED_ROOT, locale);
+      if (!fs.existsSync(root)) {
+        continue;
+      }
+
+      const translatedFiles = new fdir()
+        .withFullPaths()
+        .withErrors()
+        .filter(
+          (filePath) =>
+            filePath.endsWith(MARKDOWN_FILENAME) ||
+            filePath.endsWith(HTML_FILENAME)
+        )
+        .crawl(root)
+        .sync() as string[];
+
+      for (const translatedFile of translatedFiles) {
+        const translatedDir = path.dirname(translatedFile);
+        const contentDir = translatedDir
+          .replace(CONTENT_TRANSLATED_ROOT, CONTENT_ROOT)
+          .replace(`/${locale}/`, `/${DEFAULT_LOCALE.toLowerCase()}/`);
+
+        let md = fs.readFileSync(translatedFile, "utf-8");
+
+        const matches = [...md.matchAll(REGEXP)];
+
+        if (!matches.length) {
+          continue;
+        }
+
+        console.log(`${translatedFile}`);
+
+        let updated = false;
+
+        for (const [, value] of matches) {
+          const url = value.replace(/(^<|>$)/g, "").trim();
+          const basename = url.split("/").pop();
+
+          const filename = normalizeFilename(decodeURIComponent(basename));
+          const matchingFiles = [...(filesByFilename.get(filename) ?? [])];
+
+          const userId = path.basename(path.dirname(url));
+
+          if (!matchingFiles) {
+            console.log(`- 🔴 ${filename}`);
+            continue;
+          }
+
+          if (matchingFiles.some((path) => path.startsWith(translatedDir))) {
+            console.log(`- 🟢 ${filename} (translated-content)`);
+          } else if (
+            matchingFiles.some((path) => path.startsWith(contentDir))
+          ) {
+            console.log(`- 🟢 ${filename} (content)`);
+          } else {
+            const exactMatch = matchingFiles.find((path) =>
+              path.includes(`/${userId}/`)
+            );
+
+            if (!exactMatch) {
+              console.log(`- 🟠 ${filename} (...)`);
+
+              for (const file of matchingFiles) {
+                console.log(`    ${file}`);
+              }
+              continue;
+            }
+
+            console.log(`- 🟢 ${filename} (${exactMatch})`);
+            fs.copyFileSync(exactMatch, path.join(translatedDir, filename));
+          }
+
+          while (md.includes(url)) {
+            md = md.replace(url, filename);
+          }
+          updated = true;
+        }
+
+        if (updated) {
+          fs.writeFileSync(translatedFile, md);
+        }
+
+        console.log("");
+      }
+    }
+  });
 
 program.run();
