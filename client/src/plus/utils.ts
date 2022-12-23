@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useLocale } from "../hooks";
+import { SWRResponse } from "swr";
 
 /**
  * Returns the URL of the Plus product page, or, if we're
@@ -20,4 +21,11 @@ export function usePlusUrl(): string {
   }
 
   return target;
+}
+
+export function useLoading<T>(res: SWRResponse<T>) {
+  return {
+    ...res,
+    isLoading: res.isValidating && !res.data && !res.error,
+  };
 }

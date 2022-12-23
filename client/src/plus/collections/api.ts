@@ -1,5 +1,5 @@
 import { useState } from "react";
-import useSWR, { KeyedMutator, mutate, SWRResponse } from "swr";
+import useSWR, { KeyedMutator, mutate } from "swr";
 import useSWRInfinite from "swr/infinite";
 import {
   MultipleCollectionInfo,
@@ -9,6 +9,7 @@ import {
   CollectionItemCreationRequest,
   CollectionItemModificationRequest,
 } from "./rust-types";
+import { useLoading } from "../utils";
 
 export interface NewCollection {
   name: string;
@@ -89,13 +90,6 @@ function getItemKey(
     item_id &&
     `${COLLECTIONS_ENDPOINT}${collection_id}/items/${item_id}/`
   );
-}
-
-function useLoading<T>(res: SWRResponse<T>) {
-  return {
-    ...res,
-    isLoading: res.isValidating && !res.data && !res.error,
-  };
 }
 
 async function fetcher<T>(key: string | undefined): Promise<T> {
