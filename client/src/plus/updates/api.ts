@@ -1,6 +1,7 @@
 import useSWR from "swr";
 import { useSearchParams } from "react-router-dom";
 import { useUserData } from "../../user-context";
+import { useLoading } from "../utils";
 
 export interface Event {
   path: string;
@@ -84,23 +85,25 @@ export function useUpdates() {
     searchParams,
   });
 
-  return useSWR(
-    url,
-    async (key) => {
-      const res = await fetch(key);
-      if (res.ok) {
-        return (await res.json()) as Page;
+  return useLoading(
+    useSWR(
+      url,
+      async (key) => {
+        const res = await fetch(key);
+        if (res.ok) {
+          return (await res.json()) as Page;
+        }
+        if (res.status === 404) {
+          return;
+        }
+        throw new Error(`${res.status}: ${res.statusText}`);
+      },
+      {
+        revalidateOnFocus: false,
+        revalidateIfStale: false,
+        revalidateOnReconnect: false,
       }
-      if (res.status === 404) {
-        return;
-      }
-      throw new Error(`${res.status}: ${res.statusText}`);
-    },
-    {
-      revalidateOnFocus: false,
-      revalidateIfStale: false,
-      revalidateOnReconnect: false,
-    }
+    )
   );
 }
 

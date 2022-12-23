@@ -123,7 +123,7 @@ function UpdatesLayout() {
   document.title = `Updates | ${MDN_PLUS_TITLE}`;
   useScrollToTop();
   const user = useUserData();
-  const { data, error } = useUpdates();
+  const { data, isLoading, error } = useUpdates();
   const gleanClick = useGleanClick();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -182,9 +182,11 @@ function UpdatesLayout() {
           </Button>
         )}
 
+        {isLoading && <Loading />}
+
         {error && <DataError error={error} />}
 
-        {data ? (
+        {data && (
           <>
             {data.data.length ? (
               data.data.map((group) => (
@@ -207,8 +209,6 @@ function UpdatesLayout() {
               }
             />
           </>
-        ) : (
-          <Loading />
         )}
       </Container>
     </div>
